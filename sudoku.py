@@ -1,4 +1,7 @@
 #### Util functions for generating and checking sudoku grids
+import random 
+from ast import literal_eval
+import re
 
 def to_2d(flat_board):
     width = 4
@@ -15,12 +18,12 @@ def generate_all_valid():
     0 represents empty space
     """
 
-    all_puzzles = []
+    all_boards = []
     flat_board = [0]*16
 
     def dfs(pos):
         if pos == 16:
-            all_puzzles.append(to_2d(flat_board))
+            all_boards.append(to_2d(flat_board))
             return
         for num in [1,2,3,4]:
             if legal_move(pos, num):
@@ -39,16 +42,72 @@ def generate_all_valid():
             if flat_board[i * 4 + c] == num:
                 return False
         # 2x2 box: find the box's top left corner, check its 4 cells
-        br, bc = (r // 2) * 2, (c // 2) * 2
+        br, bc = (r // 2) * 2, (c // 2) * 2 # lowest multiple of 2 for both r and c, either 0 or 2 
         for i in range(2):
             for j in range(2):
                 if flat_board[(br + i) * 4 + (bc + j)] == num:
                     return False
         return True   # no conflicts
 
+
     dfs(0)
+    return all_boards
 
-    return all_puzzles
+def generate_puzzle(board, n_empty_cells):
+    puzzle = [row[:] for row in board]
+    flat_positions = random.sample(range(16), n_empty_cells)
+    for pos in flat_positions:
+        r, c = divmod(pos, 4)
+        puzzle[r][c] = 0
+    return puzzle
 
 
-print(generate_all_valid())
+def extract(text): 
+    # finds the last 2D array in text 
+    matches = re.findall(r'\[\s*\[.*?\]\s*\]', text, re.DOTALL)
+    if not matches:
+        return None
+    # take the last array
+    try:
+        arr = literal_eval(matches[-1])
+    except (ValueError, SyntaxError):
+        arr = None
+    return arr
+
+
+def verify(puzzle, attempt):
+    # checks if extracted attempt is a valid solution 
+    if attempt is None:
+        return False
+
+    # check shape, attempt must be 4x4
+    if len(attempt) != 4 or any(len(row) != 4 for row in attempt):
+        return False
+
+    # make sure original clues are preserved 
+    for r in range(4):
+        for c in range(4):
+            if puzzle[r][c] != 0 and puzzle[r][c] != attempt[r][c]:
+                return False
+
+    # make sure it is a valid solution 
+    target = {1, 2, 3, 4}
+    for i in range(4):
+        row = attempt[i]
+        col = [attempt[r][i] for r in range(4)]
+        if set(row) != target or set(col) != target:
+            return False
+
+    for br in (0, 2): #box row
+        for bc in (0, 2): #box col
+            box = []
+            for i in range(2):
+                for j in range(2):
+                    box.append(attempt[br + i][bc + j])
+
+            if set(box) != target:
+                return False
+
+    return True
+
+
