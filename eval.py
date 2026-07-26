@@ -1,5 +1,6 @@
 from sudoku import *
 from model import *
+import json
 
 ALL_VALID_BOARDS = generate_all_valid() 
 
@@ -16,14 +17,21 @@ for i in puzzles.keys():
     # generate puzzles per possible empty space
     for board in ALL_VALID_BOARDS:
         puzzles[i].append(generate_puzzle(board, i))
-    
-for i in puzzles.keys():
-    for p in puzzles[i]:
-        # run the model on that puzzle
-        model_output = run_model(p)
-        extracted_attempt = extract(model_output)
-        verification = verify(p, extracted_attempt)
-        puzzle_solve_history[i].append(verification)
-    
 
+for i in puzzles.keys():
+    for batch in chunks(puzzles[i], 64):
+        outputs = run_model(batch)
+        for p, output in zip(batch, outputs):
+            attempt = extract(output)
+            puzzle_solve_history[i].append(verify(p, attempt))
+    
+results = {}
+for i in puzzle_solve_history:
+    solved = sum(puzzle_solve_history[i]) #counts Trues
+    total = len(puzzle_solve_history[i])
+    results[i] = {"solved": solved, "total": total, "rate": solved/total}
+    print(f"{i} blanks: {solved}/{total} = {solved/total:.1%}")
+
+with open("eval_results.json", "w") as f:
+    json.dump(results, f, indent=2)
 

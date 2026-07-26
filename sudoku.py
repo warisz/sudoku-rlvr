@@ -81,7 +81,9 @@ def verify(puzzle, attempt):
         return False
 
     # check shape, attempt must be 4x4
-    if len(attempt) != 4 or any(len(row) != 4 for row in attempt):
+    if len(attempt) != 4:
+        return False
+    if not all(isinstance(row, list) and len(row) == 4 for row in attempt):
         return False
 
     # make sure original clues are preserved 
