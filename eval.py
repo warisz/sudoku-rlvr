@@ -19,10 +19,14 @@ for i in puzzles.keys():
         puzzles[i].append(generate_puzzle(board, i))
 
 for i in puzzles.keys():
+    print(f"evaluating {i} empty cells...")
     for batch in chunks(puzzles[i], 64):
         outputs = run_model(batch)
         for p, output in zip(batch, outputs):
             attempt = extract(output)
+            print('------------------------------------------------------------------------')
+            print(attempt)
+            print('------------------------------------------------------------------------')
             puzzle_solve_history[i].append(verify(p, attempt))
     
 results = {}
