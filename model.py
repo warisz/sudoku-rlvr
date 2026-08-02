@@ -1,8 +1,8 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-name = "Qwen/Qwen3-0.6B"
+name = "Qwen/Qwen3-1.7B"
 tok = AutoTokenizer.from_pretrained(name)
-model = AutoModelForCausalLM.from_pretrained(name).to("mps")
+model = AutoModelForCausalLM.from_pretrained(name).to("cuda")
 
 # REQUIRED for batched decoder-only generation
 tok.padding_side = "left"
@@ -29,7 +29,7 @@ def run_model(input_puzzles):
                                         enable_thinking=False)
         prompts.append(text)
 
-    ids = tok(prompts, return_tensors="pt", padding=True).to("mps") #tokenizes all the prompts at once 
+    ids = tok(prompts, return_tensors="pt", padding=True).to("cuda") #tokenizes all the prompts at once 
     out = model.generate(**ids, max_new_tokens=512, do_sample=False)  #returned as tokens with original prompts
 
     prompt_len = ids["input_ids"].shape[1]
