@@ -44,15 +44,19 @@ def reward_fn(completions, puzzle, **kwargs):
     `completions` is a list of rollout outputs; `puzzle` is the matching list from
     the dataset column of the same name, all one puzzle .
     """
-
-    print(f"COMPLETIONS: {len(completions)}, PUZZLES: {len(puzzle)}")
-    print(f"FIRST: {completions[0]}")
-    print(f"KWARGS: {list(kwargs.keys())}")
+    print("=" * 40)
+    print("RAW COMPLETION:", repr(completions[0]))
+    text = completions[0][0]["content"]
+    print("TEXT:", repr(text[:200]))
+    print("EXTRACTED:", extract(text))
+    print("PUZZLE:", puzzle[0])
+    print("VERIFY:", verify(puzzle[0], extract(text)))
+    print("=" * 40)
+    
     rewards = []
     for completion, p in zip(completions, puzzle):
-        text = completion[0]["content"]     # conversational format
+        text = completion[0]["content"]
         rewards.append(1.0 if verify(p, extract(text)) else 0.0)
-    print(f"REWARDS: {rewards}")
     return rewards
 
 
