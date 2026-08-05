@@ -1,0 +1,3 @@
+__pycache__
+adapters/grpo-sudoku-all/checkpoint-*/
+adapters/grpo-sudoku-subset-blanks/checkpoint-*/

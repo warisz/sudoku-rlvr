@@ -1,8 +1,14 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
+
 
 name = "Qwen/Qwen3-1.7B"
 tok = AutoTokenizer.from_pretrained(name)
-model = AutoModelForCausalLM.from_pretrained(name).to("cuda")
+# model = AutoModelForCausalLM.from_pretrained(name).to("cuda")
+
+#set above line to model to just use qwen 
+base = AutoModelForCausalLM.from_pretrained(name).to("cuda")
+model = PeftModel.from_pretrained(base, "grpo-sudoku-all/final") 
 
 # REQUIRED for batched decoder-only generation
 tok.padding_side = "left"
@@ -15,9 +21,7 @@ def run_model(input_puzzles):
     prompts = []
     for input_puzzle in input_puzzles:
         puzzle_prompt = f"""
-        Solve this 4x4 sudoku. Fill zeroes with digits 1-4 so each row,
-        column, and 2x2 box contains 1,2,3,4 exactly once. Here is a 2D array, in which zeroes represent empty spaces, 
-        and every item in the first dimension is a complete row:
+        Solve this 4x4 sudoku. Fill zeroes with digits 1-4 so each row, column, and 2x2 box contains 1,2,3,4 exactly once. Here is a 2D array, in which zeroes represent empty spaces, and every item in the first dimension is a complete row:
 
         {input_puzzle}
 

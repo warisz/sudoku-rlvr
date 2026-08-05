@@ -7,25 +7,26 @@ from peft import LoraConfig
 from sudoku import generate_all_valid, generate_puzzle, extract, verify
 
 MODEL = "Qwen/Qwen3-1.7B"
-BLANKS = [2, 3, 4]  
+# BLANKS = [2, 3, 4]  
 N_PER_BLANK = 400         # training puzzles per difficulty
-SEED = 1234             # different from eval's 42 -> disjoint puzzles
+SEED = 1234           
 
 
 def build_prompt(puzzle):
     """Must match the prompt used in eval, or before/after isn't comparable."""
-    return f"""Solve this 4x4 sudoku. Fill zeroes with digits 1-4 so each row, column, and 2x2 box contains 1,2,3,4 exactly once. Here is a 2D array, in which zeroes represent empty spaces, and every item in the first dimension is a complete row:
+    return f"""
+        Solve this 4x4 sudoku. Fill zeroes with digits 1-4 so each row, column, and 2x2 box contains 1,2,3,4 exactly once. Here is a 2D array, in which zeroes represent empty spaces, and every item in the first dimension is a complete row:
 
-{puzzle}
+        {puzzle}
 
-ONLY Output the solved 2D array which has replaced all zeroes with valid numbers ranging from 1-4. Ensure that the array is outputted."""
-
+        Respond with ONLY the solved 2D array and nothing else. Do not add an explanation. Example format: [[1,2,3,4],[3,4,1,2],[2,1,4,3],[4,3,2,1]]
+        """
 
 def make_dataset():
     random.seed(SEED)
     boards = generate_all_valid()
     rows = []
-    for n_blanks in BLANKS:
+    for n_blanks in range(1,16): 
         for _ in range(N_PER_BLANK):
             board = random.choice(boards)
             puzzle = generate_puzzle(board, n_blanks)
@@ -57,6 +58,8 @@ def reward_fn(completions, puzzle, **kwargs):
     for completion, p in zip(completions, puzzle):
         text = completion[0]["content"]
         rewards.append(1.0 if verify(p, extract(text)) else 0.0)
+
+    print("REWARDS:", rewards)
     return rewards
 
 
@@ -72,12 +75,13 @@ def main():
         per_device_train_batch_size=8,   # multiple of num_generations. this is how many rollout outputs sit on the GPU at a time, per batch. If num_generations is 4, and this param is 8, then we can hold the rollouts for 2 puzzles worth on the GPU 
         gradient_accumulation_steps=4, #number of batches before a weight update. So if it's set to 4, then we will generate 4 batches worth of rollouts and then update the weight
 
-        learning_rate=1e-6,
+        learning_rate=1e-5,
         num_train_epochs=1,
         logging_steps=1,
         save_steps=100,
         report_to="none",            # set "wandb" if you want curves logged
-        max_steps=3
+        chat_template_kwargs={"enable_thinking": False}
+        # max_steps=3
     )
     peft_config = LoraConfig(r=16, lora_alpha=32, target_modules="all-linear", task_type="CAUSAL_LM")
 
